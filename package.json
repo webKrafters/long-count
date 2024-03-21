@@ -1,13 +1,13 @@
 {
-  "alias": "universal-storage",
+  "alias": "long-count",
   "author": "Stephen Isienyi <stephen.isienyi@webkrafting.com>",
   "bugs": {
-    "url": "https://github.com/webKrafters/universal-storage/issues"
+    "url": "https://github.com/webKrafters/long-count/issues"
   },
   "contributors": [
     "steveswork <stephen.isienyi@gmail.com> (https://github.com/steveswork)"
   ],
-  "description": "Universal Storage - A permanent storage based on domain cookie with a local-storage fallback.",
+  "description": "Long Count - intervals and timeout capable of handling superbly long wait times surviving device sleep and wake cycles.",
   "devDependencies": {
     "@babel/cli": "^7.17.0",
     "@babel/core": "^7.20.5",
@@ -15,96 +15,76 @@
     "@babel/plugin-proposal-nullish-coalescing-operator": "^7.18.6",
     "@babel/plugin-transform-runtime": "^7.17.0",
     "@babel/preset-env": "^7.20.2",
-    "@types/jest-cli": "^24.3.0",
-    "@types/js-cookie": "^3.0.6",
-    "babel-jest": "^26.6.3",
+    "@types/jest": "^29.5.12",
+    "@types/node": "^20.11.28",
     "babel-loader": "^8.2.5",
-    "eslint": "^8.29.0",
-    "eslint-config-standard": "^16.0.2",
-    "eslint-plugin-import": "^2.22.1",
-    "eslint-plugin-jest": "^26.0.0",
-    "eslint-plugin-node": "^11.1.0",
-    "eslint-plugin-standard": "^5.0.0",
-    "jest-cli": "^26.6.3",
-    "js-cookie": "^3.0.5",
-    "typescript": "^4.8.2"
+    "jest": "^29.7.0",
+    "ts-jest": "^29.1.2",
+    "ts-node": "^10.9.2",
+    "typescript": "^5.4.2"
   },
   "files": [
     "package.json",
     "index.js",
-    "dist/server/index.js",
-    "dist/server/index.d.ts",
+    "dist/util/uint8array/index.js",
+    "dist/util/uint8array/index.d.ts",
+    "dist/util/long-int/index.js",
+    "dist/util/long-int/index.d.ts",
+    "dist/util/index.js",
+    "dist/util/index.d.ts",
+    "dist/types.d.ts",
+    "dist/timer/index.js",
+    "dist/timer/index.d.ts",
+    "dist/timer/helpers/index.js",
+    "dist/timer/helpers/index.d.ts",
+    "dist/observable/index.js",
+    "dist/observable/index.d.ts",
+    "dist/observable/helpers/index.js",
+    "dist/observable/helpers/index.d.ts",
     "dist/index.js",
     "dist/index.d.ts",
-    "dist/helper/ref/index.js",
-    "dist/helper/ref/index.d.ts",
-    "dist/constants.js",
-    "dist/constants.d.ts",
-    "dist/client/index.js",
-    "dist/client/index.d.ts",
-    "dist/base/index.js",
-    "dist/base/index.d.ts"
+    "dist/$global.js",
+    "dist/$global.d.ts"
   ],
-  "homepage": "https://github.com/webKrafters/universal-storage/readme",
-  "jest": {
-    "collectCoverageFrom": [
-      "src/**/*.js"
-    ],
-    "transform": {
-      "\\.[jt]sx?$": "babel-jest"
-    }
-  },
+  "homepage": "https://github.com/webKrafters/long-count/readme",
   "keywords": [
-    "browser storage",
-    "browser-storage",
-    "browserStorage",
-    "browserstorage",
-    "client storage",
-    "client-storage",
-    "clientStorage",
-    "clientstorage",
-    "cookie",
-    "cookies",
-    "isomorphic storage",
-    "isomorphic-storage",
-    "isomorphicStorage",
-    "isomorphicstorage",
-    "local storage",
-    "local-storage",
-    "localStorage",
-    "localstorage",
-    "server storage",
-    "server-storage",
-    "serverStorage",
-    "serverstorage",
-    "storage",
-    "universal",
-    "universal storage",
-    "universal-storage",
-    "universalStorage",
-    "universalstorage"
+    "interval",
+    "long count",
+    "long-count",
+    "longCount",
+    "longcount",
+    "set interval",
+    "set-interval",
+    "setInterval",
+    "setinterval",
+    "set timeout",
+    "set-timeout",
+    "setTimeout",
+    "settimeout",
+    "time out",
+    "time-out",
+    "timeOut",
+    "timeout",
+    "timer"
   ],
   "license": "MIT",
   "main": "index.js",
-  "name": "@webkrafters/universal-storage",
-  "peerDependencies": {
-    "js-cookie": ">= 1.0"
-  },
+  "name": "@webkrafters/long-count",
   "publishConfig": {
     "access": "public"
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/webKrafters/universal-storage.git"
+    "url": "git+https://github.com/webKrafters/long-count.git"
   },
   "scripts": {
-    "build": "eslint --fix && rm -rf dist && babel src -d dist --ignore '**/*.test.js' && tsc",
+    "build": "rm -rf dist && tsc && babel dist -d dist",
     "postbuild": "node ./post-builder",
-    "test": "eslint --fix && jest --coverage --updateSnapshot",
+    "test": "jest --coverage --updateSnapshot",
     "test:clean": "jest --clearCache",
     "test:core": "jest --updateSnapshot",
-    "test:watch": "eslint --fix && jest --updateSnapshot --watchAll"
+    "test:watch": "jest --updateSnapshot --watchAll"
   },
-  "types": "dist/index.d.ts",
-  "version": "0.0.997"
+  "types": "dist/types.d.ts",
+  "version": "0.0.1"
 }

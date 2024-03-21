@@ -1,11 +1,11 @@
-# Universal Storage
+# Long Count
 A persistent client-server coordinated storage based on client domain cookies with a local-storage fallback.
 
 ### Name:
-<strong>@webkrafters/universal-storage</strong>
+<strong>@webkrafters/long-count</strong>
 
 # Installation
-npm install --save @webkrafters/universal-storage
+npm install --save @webkrafters/long-count
 
 # Usage
 

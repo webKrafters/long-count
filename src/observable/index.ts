@@ -1,0 +1,23 @@
+import type { ITimerObservable, ObserverMap } from '../types';
+
+import { getDefaultObserverMap } from './helpers/index';
+
+export const deps = { // tested dependencies
+    getObservers: getDefaultObserverMap
+};
+
+class TimerObservable implements ITimerObservable {
+    protected observers : ObserverMap;
+    constructor() { this.observers = deps.getObservers() }
+    addEventListener( eventType, listener ) {
+        this.observers[ eventType ]?.add( listener );
+    }
+    dispatchEvent( eventType, ...args ) {
+        for( let listen of this.observers[ eventType ] ?? [] ) {
+            listen( ...args )
+        }
+    }
+    removeEventListener( eventType, listener ) { this.observers[ eventType ]?.delete( listener ) }
+}
+
+export default TimerObservable;

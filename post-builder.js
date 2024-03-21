@@ -99,7 +99,7 @@ asyncTask
 	} );
 
 function attachPublicTsDocs() {
-	for( var sourceLines = PKG_TYPE_SOURCE.split( /[\n\r]+/ ), l = sourceLines.length; l--; ) {
+	for( var sourceLines = ( PKG_TYPE_SOURCE ?? '' ).split( /[\n\r]+/ ), l = sourceLines.length; l--; ) {
 		var exportLineMatches = sourceLines[ l ].match( EXPORT_LINE_PATTERN );
 		if( !exportLineMatches ) { continue }
 		var exportName = exportLineMatches[ 1 ];
@@ -178,7 +178,7 @@ function traverse( directory ) {
 
 /** @param {string} code */
 function trimComments( code ) {
-	return code
+	return !code ? code : code
 		.replace( /\/\*#__PURE__\*\//gm, '' )
 		.replace( /\s*\/\/.*$/gm, '' )
 		.replace( /\s*\/\*\*?\s+(?:[^*]|\*(?!\/))*(?:\*\/|$)/gm, '' )
