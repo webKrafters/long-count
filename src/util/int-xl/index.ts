@@ -1,7 +1,5 @@
 import type { MyInteger } from '../../types';
 
-import { getTypeName } from '../index';
-
 import { getValidDelayTypeName } from '../../timer/helpers/index';
 
 import * as intArray from '../uint8array/index';

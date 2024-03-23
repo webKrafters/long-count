@@ -30,6 +30,7 @@ describe( 'TimerObservable', () => {
     test( 'will not add listener for an invalid event type in the storage', () => {
         setAddSpy.mockClear();
         const testListener = () => {}
+        // @ts-expect-error
         ( new TimerObservable() ).addEventListener( 'invalid-event-type', testListener );
         expect( setAddSpy ).not.toHaveBeenCalled();
     } );
@@ -65,6 +66,7 @@ describe( 'TimerObservable', () => {
     test( 'will not remove event listener for an invalid event type', () => {
         setDeleteSpy.mockClear();
         const testListener = () => {}
+        // @ts-expect-error
         ( new TimerObservable() ).removeEventListener( 'invalid-event-type', testListener );
         expect( setDeleteSpy ).not.toHaveBeenCalled();
     } );

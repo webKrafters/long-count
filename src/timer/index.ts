@@ -1,37 +1,38 @@
-import type { Args, Delay, MyInteger, Options, VoidFn } from '../types';
+import type { Delay, MyInteger, Options, VoidFn } from '../types';
 
-import { EMPTY_OBJECT, MAX_ITER_DURATION } from '../constants';
+import { EMPTY_OBJECT, MAX_SET_TIMEOUT_DELAY } from '../constants';
 
 import { $global } from '../$global';
 
 import { getTypeName, noop } from '../util/index';
 
-import { add, subtract } from '../util/long-int/index';
+import { add, subtract } from '../util/int-xl/index';
 
 import { sanitizeDelay } from './helpers/index';
 
 import TimerObservable from '../observable/index';
 
-class Timer <HANDLER_ARGS extends Args = Args> extends TimerObservable {
+class Timer extends TimerObservable {
     #continuityWatch : VoidFn;
     #currentIterDuration : number;
-    #currentIterLengthSuspended : number = 0; // current iteration duration remaining at suspension
+    #currentIterLengthSuspended = 0; // current iteration duration remaining at suspension
+    #cycleStart : number; // the time of the current count iteration start
     #handler : VoidFn;
     #disposed = false;
+    #numCycles = 0; // global settimeout invocations currently made in the life of this timer.
     #maxIterDuration : number;
-    #payload : HANDLER_ARGS;
-    #refreshTime : number; // the time of the current count iteration start
+    #payload : Array<any>;
     #timeoutId : NodeJS.Timeout|string|number|undefined;
     #totalUntouchedDelay : MyInteger|undefined;
     constructor(
         fn: VoidFn,
         delay: Delay = 0,
         options : Options = EMPTY_OBJECT,
-        ...args: HANDLER_ARGS
+        ...args: Array<any>
     ) {
         super();
         this.#handler = fn;
-        this.#maxIterDuration =  options.maxTimeoutDelay ?? MAX_ITER_DURATION;
+        this.#maxIterDuration =  options.maxTimeoutDelay ?? MAX_SET_TIMEOUT_DELAY;
         this.#payload = args;
         this.#totalUntouchedDelay = sanitizeDelay( delay );
         this.persist();
@@ -40,9 +41,9 @@ class Timer <HANDLER_ARGS extends Args = Args> extends TimerObservable {
     } 
     get continuityWatch () { return this.#continuityWatch }
     // time spent in current iteration
-    get currentIterElaspedTime () { return Date.now() - this.#refreshTime }
+    get currentIterElaspedTime () { return Date.now() - this.#cycleStart }
     get currentWaitTime () {
-        return typeof this.#refreshTime === 'undefined'
+        return typeof this.#cycleStart === 'undefined'
             ? this.#totalUntouchedDelay
             : add(
                 this.#currentIterDuration - this.currentIterElaspedTime,
@@ -51,7 +52,6 @@ class Timer <HANDLER_ARGS extends Args = Args> extends TimerObservable {
     }
     get disposed () { return this.#disposed }
     beginIteration() {
-        this.#refreshTime = Date.now();
         switch( getTypeName( this.#totalUntouchedDelay ) ) {
             case 'Number': {
                 const delay = this.#totalUntouchedDelay as number;
@@ -85,8 +85,10 @@ class Timer <HANDLER_ARGS extends Args = Args> extends TimerObservable {
         this.clearTimeout();
         if( !this.#totalUntouchedDelay ) {
             this.execute();
+            this.notifCycleEnd( true );
             return this.exit();
         }
+        this.notifCycleEnd();
         this.beginIteration();
     }
     execute() { this.#handler( ...this.#payload ) }
@@ -96,6 +98,13 @@ class Timer <HANDLER_ARGS extends Args = Args> extends TimerObservable {
         this.dispatchEvent( 'exit', { timeRemaining: this.currentWaitTime } );
         this.#handler = this.#payload = this.#totalUntouchedDelay = this.#continuityWatch = undefined;
         this.#disposed = true;
+    }
+    notifCycleEnd( isFinal = false ) {
+        this.dispatchEvent( 'cycleEnding', {
+            currentCycle: this.#numCycles,
+            isFinal,
+            time: Date.now()
+        } );
     }
     onContinuityChange() {
         switch( $global.document.visibilityState ) {
@@ -112,8 +121,7 @@ class Timer <HANDLER_ARGS extends Args = Args> extends TimerObservable {
     }
     resume() {
         if( this.#currentIterLengthSuspended < 0 ) { return this.beginIteration() }
-        this.#refreshTime = Date.now();
-        const rollover = this.#currentIterLengthSuspended - this.#refreshTime;
+        const rollover = this.#currentIterLengthSuspended - Date.now();
         this.#currentIterLengthSuspended = 0;
         if( rollover < 0 ) { return this.beginIteration() }
         this.#currentIterDuration = rollover;
@@ -126,9 +134,16 @@ class Timer <HANDLER_ARGS extends Args = Args> extends TimerObservable {
             () => this.endIteration(),
             this.#currentIterDuration - 10 // 10 ms error margin to account for record keeping and other call preparation
         );
+        const isInit = !this.#cycleStart;
+        this.#cycleStart = Date.now();
+        this.dispatchEvent( 'cycleStarted', {
+            currentCycle: ++this.#numCycles,
+            isInit,
+            time: this.#cycleStart
+        } );
     }
     suspend() {
-        if( typeof this.#refreshTime === 'undefined' ) { return }
+        if( typeof this.#cycleStart === 'undefined' ) { return }
         this.#currentIterLengthSuspended = this.#currentIterDuration - this.currentIterElaspedTime;
         this.clearTimeout();
         this.dispatchEvent( 'suspend', { timeRemaining: this.currentWaitTime } );

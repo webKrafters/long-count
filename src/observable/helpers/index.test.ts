@@ -5,19 +5,14 @@ describe( 'TimerObservable helpers', () => {
         let map;
         beforeAll(() => { map = getDefaultObserverMap() });
         afterAll(() => { map = null });
-        test( 'returns object with 3 properties represeting event types', () => {
-            expect( Object.keys( map ) ).toHaveLength( 3 );
+        test( 'returns object with 5 properties represeting event types', () => {
+            expect( Object.keys( map ) ).toHaveLength( 5 );
         } );
-        [ 'exit', 'resume', 'suspend' ].forEach( k => test(
-            `contains the ${ k } event entry`,
-            () => { expect( k in map ).toBe( true ) }
-        ) );
+        test( 'adheres to specific event types', () => {
+            expect( Object.keys( map ) ).toStrictEqual([ 'cycleEnding', 'cycleStarted', 'exit', 'resume', 'suspend' ])
+        } );
         test( 'holds storage set per observed event type', () => {
-            expect(
-                Object
-                    .values( map )
-                    .every( s => s instanceof Set )
-            ).toBe( true );
+            expect( Object.values( map ).every( s => s instanceof Set ) ).toBe( true );
         } );
     })
 } );

@@ -1,14 +1,12 @@
-export type Args = Array<any>;
-
 export type Delay = BigInteger|Iterable<number>|IterableIterator<number>|number|string|undefined;
 
 export type DelayTypeName = 'BigInt'|'Invalid'|'Iterable'|'Number'|'String'|'Undefined'|'Uint8Array'
 
-export type EventType = 'exit'|'resume'|'suspend';
+export type EventType = 'cycleEnding'|'cycleStarted'|'exit'|'resume'|'suspend';
 
 export interface ITimerObservable {
     addEventListener( eventType : EventType, listener : VoidFn ) : void;
-    dispatchEvent<ARGS extends Args = Args>( eventType : EventType, ...args : ARGS ) : void;
+    dispatchEvent( eventType : EventType, ...args : Array<any> ) : void;
     removeEventListener( eventType : EventType, listener : VoidFn ) : void
 }
 
@@ -17,8 +15,8 @@ export type MyInteger = Uint8Array|number;
 export type ObserverMap = {[ K in EventType]: Set<VoidFn>};
 
 export interface Options {
-    immediate? : boolean,
-    maxTimeoutDelay? : number
+    immediate? : boolean, // set true to invoke timer handler once follwoing timer instantiation and then once following the delay window
+    maxTimeoutDelay? : number // allows for declaring max timeout delay value allowed by the target platform
 };
 
-export type VoidFn = <ARGS extends Args = Args>( ...args: ARGS ) => void;
+export type VoidFn = ( ...args: Array<any> ) => void;

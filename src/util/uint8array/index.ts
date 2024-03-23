@@ -45,11 +45,11 @@ export const add = ( adder : Uint8Array, addend: Uint8Array ) : Uint8Array => {
             addend[ addendLen - i ],
             sum.carry
         );
-        tally[ shorterLen - 1 ] = sum.value;
+        tally[ shorterLen - i ] = sum.value;
     }
     let remainingLen = longerParam.length - shorterLen;
     if( !sum.carry ) {
-        tally.unshift( ...longerParam.slice( 0, remainingLen ) )
+        tally.unshift( ...longerParam.slice( 0, remainingLen ) );
         return new Uint8Array( tally );
     }
     {

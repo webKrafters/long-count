@@ -48,7 +48,7 @@
 /* 
 */
 
-import type { Args, Delay, Options, VoidFn } from './types';
+import type { Delay, EventType, Options, VoidFn } from './types';
 
 import { $global } from './$global';
 
@@ -88,7 +88,7 @@ export class LongCounter extends TimerObservable {
     get timeRemaining() { return this.#timer?.currentWaitTime }
     protected get timer() { return this.#timer }
     protected set timer( timer ) { this.#timer = timer }
-    addEventListener( eventType, listener ) {
+    addEventListener( eventType : EventType, listener : VoidFn ) {
         this.#timer &&
         this.observers[ eventType ].add( listener ) &&
         this.#timer.addEventListener( eventType, listener );
@@ -103,10 +103,10 @@ export class LongCounter extends TimerObservable {
         this.#timer.exit();
         this.#timer = undefined;
     }
-    dispatchEvent( eventType, ...args ) {
-        return this.#timer?.dispatchEvent( eventType, ...args );
+    dispatchEvent( eventType : EventType, ...args : Array<any> ) {
+        this.#timer?.dispatchEvent( eventType, ...args );
     }
-    removeEventListener( eventType, listener ) {
+    removeEventListener( eventType : EventType, listener : VoidFn ) {
         this.#timer &&
         this.observers[ eventType ].delete( listener ) &&
         this.#timer.removeEventListener( eventType, listener );
@@ -120,7 +120,7 @@ export class Interval extends LongCounter {
         if( !isInternal( internalCode ) ) { return }
         for( let [ eventType, listeners ] of Object.entries( this.observers ) ) {
             for( let listener of listeners ) {
-                timer.addEventListener( eventType, listener );
+                timer.addEventListener( eventType as EventType, listener );
             }
         }
         this.cancel();
@@ -144,9 +144,9 @@ const resolveTimerOptions = <T extends boolean|Opts>( options : T ) : Opts => (
     typeof options === 'boolean' ? { immediate: options } : options
 );
 
-export function setInterval<HANDLER_ARGS extends Args = Args>( fn : VoidFn, delay? : Delay, option? : boolean, ...args : HANDLER_ARGS ) : LongCounter;
-export function setInterval<HANDLER_ARGS extends Args = Args>( fn : VoidFn, delay? : Delay, option? : Opts, ...args : HANDLER_ARGS ) : LongCounter;
-export function setInterval<HANDLER_ARGS extends Args = Args>( fn : VoidFn, delay : Delay = undefined, options : boolean|Opts = false , ...args : HANDLER_ARGS ) {
+export function setInterval( fn : VoidFn, delay? : Delay, option? : boolean, ...args : Array<any> ) : LongCounter;
+export function setInterval( fn : VoidFn, delay? : Delay, option? : Opts, ...args : Array<any> ) : LongCounter;
+export function setInterval( fn : VoidFn, delay : Delay = undefined, options : boolean|Opts = false , ...args : Array<any> ) {
     const tOptions = resolveTimerOptions( options );
     const interval = new Interval( new Timer( fn, delay, tOptions, ...args ) );
     interval.addEventListener( 'exit', () => interval.updateTimer(
@@ -156,9 +156,9 @@ export function setInterval<HANDLER_ARGS extends Args = Args>( fn : VoidFn, dela
     return interval;
 };
 
-export function setTimeout<HANDLER_ARGS extends Args = Args>( fn : VoidFn, delay? : Delay, options? : boolean, ...args : HANDLER_ARGS ) : LongCounter;
-export function setTimeout<HANDLER_ARGS extends Args = Args>( fn : VoidFn, delay? : Delay, options? : Opts, ...args : HANDLER_ARGS ) : LongCounter;
-export function setTimeout<HANDLER_ARGS extends Args = Args>( fn : VoidFn, delay : Delay = undefined, options : any = false, ...args : HANDLER_ARGS ) {
+export function setTimeout( fn : VoidFn, delay? : Delay, options? : boolean, ...args : Array<any> ) : LongCounter;
+export function setTimeout( fn : VoidFn, delay? : Delay, options? : Opts, ...args : Array<any> ) : LongCounter;
+export function setTimeout( fn : VoidFn, delay : Delay = undefined, options : any = false, ...args : Array<any> ) {
     const counter = new LongCounter( new Timer( fn, delay, resolveTimerOptions( options ), ...args ) );
     counter.addEventListener( 'exit', counter.cancel.bind( counter ) );
     return counter;

@@ -1,4 +1,4 @@
-import type { ITimerObservable, ObserverMap } from '../types';
+import type { EventType, ITimerObservable, ObserverMap, VoidFn } from '../types';
 
 import { getDefaultObserverMap } from './helpers/index';
 
@@ -9,15 +9,17 @@ export const deps = { // tested dependencies
 class TimerObservable implements ITimerObservable {
     protected observers : ObserverMap;
     constructor() { this.observers = deps.getObservers() }
-    addEventListener( eventType, listener ) {
+    addEventListener( eventType : EventType, listener : VoidFn ) {
         this.observers[ eventType ]?.add( listener );
     }
-    dispatchEvent( eventType, ...args ) {
+    dispatchEvent( eventType : EventType, ...args : Array<any> ) {
         for( let listen of this.observers[ eventType ] ?? [] ) {
             listen( ...args )
         }
     }
-    removeEventListener( eventType, listener ) { this.observers[ eventType ]?.delete( listener ) }
+    removeEventListener( eventType : EventType, listener : VoidFn ) {
+        this.observers[ eventType ]?.delete( listener );
+    }
 }
 
 export default TimerObservable;
