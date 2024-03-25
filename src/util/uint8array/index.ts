@@ -1,3 +1,4 @@
+import { isUint8Array } from 'util/types';
 import type { MyInteger } from '../../types';
 
 const BASE = 10;
@@ -26,6 +27,17 @@ const convert = ( numStr : string ) : Uint8Array => {
     for( const c of numStr ) { intArr.push( parseInt( c ) ) }
     return trimLeadingZeros( new Uint8Array( intArr ) );
 };
+
+const withExponent = ( numStr : string ) : {
+    nstr : string, expN? : number
+} => {
+    let [ nstr, e ] = numStr.split( 'e' );
+    if( typeof e === 'undefined' ) { return { nstr } }
+    const expN = parseInt( e );
+    // istanbul ignore next
+    if( isNaN( expN ) ) { return { nstr } }
+    return { nstr, expN };
+}
 
 export const add = ( adder : Uint8Array, addend: Uint8Array ) : Uint8Array => {
     adder = trimLeadingZeros( adder );
@@ -71,19 +83,27 @@ export const add = ( adder : Uint8Array, addend: Uint8Array ) : Uint8Array => {
     return new Uint8Array( tally );
 };
 
-export const fromInteger = ( num : number ) : Uint8Array => fromString( `${ num }` );
-
-export const fromString = ( str : string ) : Uint8Array => {
-    if( !STRING_PATTERN.test( str ) ) {
-        throw new SyntaxError( `Expecting a numeric string matching the RegExp pattern: ${ STRING_PATTERN.source } but found ${ str } instead.` );
+export function fromScalar( scalar : number ) : Uint8Array;
+export function fromScalar( scalar : string ) : Uint8Array;
+export function fromScalar( scalar : number | string ) : Uint8Array;
+export function fromScalar( scalar : any ) {
+    scalar = `${ scalar }`;
+    if( scalar === 'null' || scalar === 'undefined' ) { return new Uint8Array() }
+    if( !STRING_PATTERN.test( scalar ) ) {
+        throw new SyntaxError( `Expecting a numeric string matching the RegExp pattern: ${ STRING_PATTERN.source } but found ${ scalar } instead.` );
     }
-    let [ num, ...numParts ] = str.split( '.' );
-    if( typeof numParts[ 0 ] === 'undefined' ) { return convert( num ) }
-    let [ frac = '', exponent ] = numParts[ 0 ].split( 'e' );
-    if( typeof exponent === 'undefined' ) { return convert( num ) }
-    const exponentN : number = parseInt( exponent );
-    if( isNaN( exponentN ) ) { return convert( num ) }
-    return convert( `${ num }${ frac.slice( 0, exponentN ) }${ '0'.repeat( exponentN - frac.length ) }` );
+    let [ num, ...numParts ] = scalar.split( '.' );
+    if( typeof numParts[ 0 ] === 'undefined' ) {
+        const { nstr, expN } = withExponent( num );
+        return convert( !expN ? nstr : `${ nstr }${ '0'.repeat( expN ) }` );
+    }
+    const { nstr, expN } = withExponent( numParts[ 0 ] );
+    // istanbul ignore next
+    if( !expN ) { convert( num ) }
+    num = `${ num }${ nstr.slice( 0, expN ) }`;
+    if( expN <= nstr.length ) { return convert( num ) }
+    num = `${ num }${ '0'.repeat( expN - nstr.length ) }`;
+    return convert( num );
 };
 
 export const subtract = (
@@ -93,10 +113,9 @@ export const subtract = (
     subtractor = trimLeadingZeros( subtractor );
     subtrahend = trimLeadingZeros( subtrahend );
     if( subtractor.length < subtrahend.length || (
+        subtractor.length === subtrahend.length &&
         subtractor[ 0 ] < subtrahend[ 0 ] 
-    ) ) {
-        return new Uint8Array( 1 );
-    }
+    ) ) { return new Uint8Array( 1 ) }
     const diff = subtractor.slice();
     for(
         let i = 1, subtractorLen = subtractor.length, subtrahendLen = subtrahend.length;
@@ -119,6 +138,7 @@ export const subtract = (
                 }
                 diff[ offset ] = 9;
             }
+            // istanbul ignore next
             if( !isPositive ) { return new Uint8Array( 1 ) }
         }
         diff[ subtractorIndex ] = digDiff;
@@ -126,7 +146,15 @@ export const subtract = (
     return trimLeadingZeros( diff );
 };
 
+/**
+ * Attempts to rewrite Uint8Array elements into integer digits
+ * within MAX_SAFE_INTEGER range or return untouched.
+ * 
+ * @param uint8 
+ * @returns 
+ */
 export const toMyInteger = ( uint8 : Uint8Array ) : MyInteger => {
+    if( !uint8.length ) { return }
     uint8 = trimLeadingZeros( uint8 );
     if( uint8.length > MAX_INT_LENGTH ) { return uint8 }
     const nStr : Array<string> = [];

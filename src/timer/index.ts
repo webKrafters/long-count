@@ -4,7 +4,7 @@ import { EMPTY_OBJECT, MAX_SET_TIMEOUT_DELAY } from '../constants';
 
 import { $global } from '../$global';
 
-import { getTypeName, noop } from '../util/index';
+import { getTypeOf, noop } from '../util/index';
 
 import { add, subtract } from '../util/int-xl/index';
 
@@ -52,7 +52,7 @@ class Timer extends TimerObservable {
     }
     get disposed () { return this.#disposed }
     beginIteration() {
-        switch( getTypeName( this.#totalUntouchedDelay ) ) {
+        switch( getTypeOf( this.#totalUntouchedDelay ) ) {
             case 'Number': {
                 const delay = this.#totalUntouchedDelay as number;
                 if( delay <= this.#maxIterDuration ) {
