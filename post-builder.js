@@ -61,7 +61,7 @@ asyncTask
 			[ PKG_TYPE_SOURCE, PKG_TYPE_SOURCE_FILEPATH, PKG_TYPE_SOURCE_RELEASE_TASK_INDEX ]
 		].map( function ( item ) {
 			item[ 0 ] = item[ 1 ] === PKG_TYPE_DEF_FILEPATH
-				? item[ 0 ].replace( /^\n/, '' ).replace( /T_[0-9]+/gm, 'T' )
+				? ( item[ 0 ] || '' ).replace( /^\n/, '' ).replace( /T_[0-9]+/gm, 'T' )
 				: trimComments( item[ 0 ] );
 			return writeFile( item[ 1 ], item[ 0 ], CHARSET )
 				.then( function () {

@@ -1,53 +1,3 @@
-/* ------------------------------
-/* 
-/* Accept:
-/* Integer Number
-/* "Large integer" string or any integer
-/* BigInt
-/* Iterable<single digit integers>
-/*
-/* ------------------------------
-/* 
-/* - ignore negative numbers, string staring with "-", 
-/* 
-/* Impl:
-/* if( input is less than 10,000 or 1e4 or "10,000" or "1e4") {
-/* 	use simple setTimeout or setInterval
-/* }
-/* if( large string integers <= Integer Number Infinity & >= 0 ) {
-/* 	convert to regular integer
-/* }
-/* 
-/* Maintaining countdown consistency in browser sleep/wake:
-/* 1. Always capture the time of setTimeout/setInterval invocation for an iteration in "refreshTime" (this is the start of the current iteration)
-/* Listen for document.onVisibilityChange event
-/* 	if( document.visibilityState !== 'visible' ) {
-/* 		capture current timeout/interval elapsed = Date.now() - $refreshTime in 					"elapsedTime"
-/* 		and capture current iteration timeout/interval pending = this iteration delay 				total duration - $elapsedTime in "remainingTime"
-/* 		return;
-/* 	}
-/* 	capture time spent in sleep = Date.now() - $remainingTime in "idlePhaseTime"
-/* 	if( $idlePhaseTime > 0 {
-/* 		clear current timeout/interval
-/* 		capture new timeout/interval with $idePhaseTime delay into 						`timer.current`
-/* 		return;
-/* 	}
-/* 	capture total remaining delay = ($remainingTime + total untouched delay 				time) - $idlePhasetTime into "totalRemainingTime"
-/* 		if( $totalRemaingTime <= 0 ) {
-/* 			clear current timeout/interval
-/* 			invoke timer callback
-/* 			set $timer.current and other pertinent properties to undefined
-/* 			return
-/* 		}
-/* 		set total untouched delay time to $totalTimeRemaining start a new iteration
-/* 		-  capture timeout/interval afresh with the callback into $timer.current
-/* 		-  capture the time of setTimeout/setInterval invocation for an iteration in 				"refreshTime"
-/* 		-  do all other captures as t.b.d.
-/* 	}
-/* }
-/* 
-*/
-
 import type { Delay, EventType, Options, VoidFn } from './types';
 
 import { $global } from './$global';
@@ -60,7 +10,9 @@ export type Opts = Partial<Options>;
 
 let counter = 0;
 
-const longCounterMap : {[counterId:number]: LongCounter} = {};
+const longCounterMap : {
+    [counterId:number]: LongCounter
+} = {};
 
 let internalCode = Math.random();
 const isInternal = (() => {

@@ -35,15 +35,18 @@ export function isGreaterThan( int1 : Uint8Array, int2 : Uint8Array ) : boolean;
 export function isGreaterThan( int1 : number, int2 : number ) : boolean;
 export function isGreaterThan( int1 : MyInteger, int2 : MyInteger ) : boolean;
 export function isGreaterThan( int1 : any, int2 : any ) {
-    const d = normalizeOperands( int1, int2 ).map( toUint8Array );
+    const d = normalizeOperands( int1, int2 );
     if( !d.length ) { return false }
-    const [ uint1, uint2 ] = d;
+    if( d.every( v => v.type === 'Number' ) ) {
+        return d[ 0 ].value > d[ 1 ].value;
+    }
+    const [ uint1, uint2 ] = d.map( toUint8Array );
     let u1Len = uint1.length;
     if( u1Len > uint2.length ) { return true }
     if( uint2.length > u1Len ) { return false }
-    for( let u = 0; u < u1Len; u++  ) {
+    for( let u = 0; u < u1Len; u++ ) {
         if( uint1[ u ] > uint2[ u ] ) { return true }
-        if( uint2[ u ] > uint2[ u ] ) { return false }
+        if( uint2[ u ] > uint1[ u ] ) { return false }
     }
     return false;
 } 

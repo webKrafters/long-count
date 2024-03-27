@@ -1,4 +1,4 @@
-import { add, deps, subtract } from './index';
+import { add, deps, isGreaterThan, subtract } from './index';
 
 describe( 'intXl module', () => {
     let fromScalarSpy, toMyIntegerSpy, uint8AddSpy, uint8SubtractSpy;
@@ -123,6 +123,35 @@ describe( 'intXl module', () => {
                     // @ts-expect-error
                     expect( add( true, false ) ).toBeUndefined();
                 } );
+            } );
+        } );
+    } );
+    describe( 'isGreaterThan()', () => {
+        const uInt8Array = new Uint8Array([ 3, 7, 3, 9, 9, ...( '9'.repeat( 28 ).split( '' ).map( v => +v ) ) ]);
+        test( 'compares first operand to the second', () => {
+            expect( isGreaterThan( 2126006663046353, 2124288660690935 ) ).toBe( true )
+            expect( isGreaterThan( 2124288660690935, 2126006663046353 ) ).toBe( false )
+            expect( isGreaterThan( 2124288660690935, 2124288660690935) ).toBe( false )
+        } );
+        test( 'also compares large integers in whose digits are loaded in Uint8Array', () => {
+            const xlInt1 = new Uint8Array([ 3, 7, 4, 0, 1, ...( '0'.repeat( 28 ).split( '' ).map( v => +v ) ) ]);
+            const xlInt2 = uInt8Array;
+            const int = 8801;
+            expect( isGreaterThan( xlInt1, int ) ).toBe( true );
+            expect( isGreaterThan( int, xlInt1 ) ).toBe( false );
+            expect( isGreaterThan( xlInt1, xlInt1 ) ).toBe( false );
+            expect( isGreaterThan( xlInt1, xlInt2 ) ).toBe( true );
+            expect( isGreaterThan( xlInt2, xlInt1 ) ).toBe( false );
+        } );
+        describe( 'only for use with numbers and Uint8Array containing single integer values', () => {
+            test( 'unexpected behavior with big integers - use single digit integer Uint8Arrays', () => {
+                // @ts-expect-error
+                expect( isGreaterThan( 90, 22n ) ).toBe( false );
+                expect( isGreaterThan( 90, 22 ) ).toBe( true );
+                // @ts-expect-error
+                expect( isGreaterThan( BigInt( uInt8Array.join( '' ) ), 33 ) ).toBe( false );
+                expect( isGreaterThan( uInt8Array, 33 ) ).toBe( true );
+
             } );
         } );
     } );

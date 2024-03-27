@@ -10,8 +10,9 @@ import { add, isGreaterThan, subtract } from '../util/int-xl/index';
 
 import { sanitizeDelay } from './helpers/index';
 
+import invoke from './helpers/decorators/invoke';
+
 import TimerObservable from '../observable/index';
-import { fromScalar } from '../util/uint8array/index';
 
 class Timer extends TimerObservable {
     #continuityWatch : VoidFn;
@@ -41,18 +42,16 @@ class Timer extends TimerObservable {
         this.beginIteration();
         options.immediate && this.execute();
     } 
-    // istanbul ignore next
     get continuityWatch () { return this.#continuityWatch }
     // time spent in current iteration
-    get currentIterElaspedTime () { return Date.now() - this.#cycleStart }
+    // istanbul ignore next
+    get currentIterElaspedTime () { return !this.#cycleStart ? 0 : Date.now() - this.#cycleStart }
     get currentWaitTime () {
-        // istanbul ignore next
-        return typeof this.#cycleStart === 'undefined'
-            ? this.#totalUntouchedDelay
-            : add(
-                this.#currentIterDuration - this.currentIterElaspedTime,
-                this.#totalUntouchedDelay
-            );
+        if( !this.#cycleStart ) { return 0 }
+        const iterRemaining = this.#currentIterDuration - this.currentIterElaspedTime;
+        return this.#totalUntouchedDelay
+            ?  add( iterRemaining, this.#totalUntouchedDelay )
+            : iterRemaining;
     }
     get disposed () { return this.#disposed }
     @invoke
@@ -102,8 +101,9 @@ class Timer extends TimerObservable {
     exit() {
         this.clearTimeout();
         this.#continuityWatch && $global.document.removeEventListener( 'visibilitychange', this.#continuityWatch );
-        this.dispatchEvent( 'exit', { timeRemaining: this.currentWaitTime ?? 0 } );
-        this.#continuityWatch = this.#handler = this.#payload = this.#totalUntouchedDelay = undefined;
+        this.dispatchEvent( 'exit', { timeRemaining: this.currentWaitTime } );
+        this.#continuityWatch = this.#cycleStart = this.#handler = this.#payload = this.#totalUntouchedDelay = undefined;
+        this.#currentIterDuration = 0;
         this.#disposed = true;
     }
     @invoke
@@ -116,9 +116,7 @@ class Timer extends TimerObservable {
     }
     @invoke
     notifyResume() {
-        // istanbul ignore next
-        const timeRemaining = this.currentWaitTime || 0;
-        this.dispatchEvent( 'resume', { timeRemaining } );
+        this.dispatchEvent( 'resume', { timeRemaining: this.currentWaitTime } );
     }
     @invoke
     onContinuityChange() {
@@ -141,7 +139,7 @@ class Timer extends TimerObservable {
         const postIterSleepLength =  sleepDuration - preSleepIterRemaining;
         /* did not completely sleep through the iteration */
         if( postIterSleepLength <= 0  ) {
-            this.#currentIterDuration = postIterSleepLength;
+            this.#currentIterDuration = Math.abs( postIterSleepLength );
             this.notifyResume();
             return this.setTimeout();
         }
@@ -149,6 +147,7 @@ class Timer extends TimerObservable {
         if( !this.#totalUntouchedDelay || isGreaterThan(
             postIterSleepLength, this.#totalUntouchedDelay
         ) ) {
+            this.#cycleStart = undefined;
             this.notifyResume();
             this.execute();
             return this.exit();
@@ -180,18 +179,11 @@ class Timer extends TimerObservable {
     @invoke
     suspend() {
         // istanbul ignore next
-        if( typeof this.#cycleStart === 'undefined' ) { return }
+        if( !this.#cycleStart ) { return }
         this.#suspendedAt = Date.now();
         this.clearTimeout();
-        this.dispatchEvent( 'suspend', { timeRemaining: this.currentWaitTime ?? 0 } );
+        this.dispatchEvent( 'suspend', { timeRemaining: this.currentWaitTime } );
     }
 }
 
 export default Timer;
-
-function invoke<C>( method: Function, context: C ) {
-    return function ( this: Timer, ...args: Array<any> ) {
-        if( this.disposed ) { return };
-        return method.apply( this, args );
-    };
-}

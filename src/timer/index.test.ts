@@ -76,15 +76,33 @@ describe( 'Timer', () => {
             jest.advanceTimersByTime( 0 );
             expect( handlerMock ).toHaveBeenCalledTimes( 1 );
         } );
-        test( 'executes after `delay` ms following instantiation', () => {
-            const waitTimes = [ 900, 100 ];
-            const handlerMock = jest.fn();
-            new Timer( handlerMock, waitTimes[ 0 ] + waitTimes[ 1 ] );
-            expect( handlerMock ).not.toHaveBeenCalled();
-            jest.advanceTimersByTime( waitTimes[ 0 ] );
-            expect( handlerMock ).not.toHaveBeenCalled();
-            jest.advanceTimersByTime( waitTimes[ 1 ] );
-            expect( handlerMock ).toHaveBeenCalledTimes( 1 );
+        describe( 'after `delay` ms following instantiation', () => {
+            let postInstantion = { disposed: false, handlerCalled: false };
+            let preDelayReach = { disposed: false, handlerCalled: false };
+            let delayReached = { disposed: false, handlerCalled: false };
+            beforeAll(() => {
+                const waitTimes = [ 900, 100 ];
+                const handlerMock = jest.fn();
+                const timer = new Timer( handlerMock, waitTimes[ 0 ] + waitTimes[ 1 ] );
+                postInstantion.handlerCalled = !!handlerMock.mock.calls.length
+                postInstantion.disposed = timer.disposed;
+                jest.advanceTimersByTime( waitTimes[ 0 ] );
+                preDelayReach.handlerCalled = !!handlerMock.mock.calls.length
+                preDelayReach.disposed = timer.disposed;
+                jest.advanceTimersByTime( waitTimes[ 1 ] );
+                delayReached.handlerCalled = !!handlerMock.mock.calls.length
+                delayReached.disposed = timer.disposed;
+            });
+            test( 'automatically runs handler', () => {
+                expect( postInstantion.handlerCalled ).toBe( false );
+                expect( preDelayReach.handlerCalled ).toBe( false );
+                expect( delayReached.handlerCalled ).toBe( true );
+            } );
+            test( 'automatically conducts self-disposal', () => {
+                expect( postInstantion.disposed ).toBe( false );
+                expect( preDelayReach.disposed ).toBe( false );
+                expect( delayReached.disposed ).toBe( true );
+            } );
         } );
         describe( 'values and ranges', () => {
             test( 'defaults to 0 for negative integer', () => {
@@ -357,21 +375,23 @@ describe( 'Timer', () => {
                     () => new Promise(( resolve, reject ) => {
                         const timer = new Timer( noop, MAX_SET_TIMEOUT_DELAY * 1e6 );
                         
-                        // device enters "sleep" mode with 10,000ms 
-                        // remaining on the current cycle clock.
+                        // device enters "sleep" mode with ~33.333%
+                        // of the original delay wait time remaining.
                         jest.advanceTimersByTime( MAX_SET_TIMEOUT_DELAY * 1e4 );
-                        // DateNowSpy.mockReturnValue( Date.now() + ( MAX_SET_TIMEOUT_DELAY - 1e4 ) );
-                        initDispatchTest( 'hidden' ); // trigger the sleep mode( new Promise(( resolve, reject )  => { // initiate an event loop cycle wait
+
+                        // trigger the sleep mode
+                        initDispatchTest( 'hidden' );
                         
-                        ( new Promise(( resolve, reject )  => { // initiate an event loop cycle wait
+                        // initiate an event loop cycle wait
+                        ( new Promise(( resolve, reject )  => { 
                             try {
                                 timerBeginIterationSpy.mockClear();
                                 timerEndIterationSpy.mockClear();
                                 timerDispatchEventSpy.mockClear();
                                 timerSetTimeoutSpy.mockClear();
 
-                                // sleeps 3000ms of the 10000ms remaining on the current cycle clock.
-                                DateNowSpy.mockReturnValue( 2126006663046353 );
+                                // sleeps so long as to exhaust the entire pending delay.
+                                DateNowSpy.mockReturnValue( MAX_SET_TIMEOUT_DELAY * 3e6 );
 
                                 // triggering device wake-up call
                                 initDispatchTest( 'visible' ); 
@@ -399,6 +419,25 @@ describe( 'Timer', () => {
                     expect.any( Function )
                 );
             } );
+        } );
+    } );
+    describe( 'properties', () => {
+        const delay = 1000;
+        let timer;
+        beforeAll(() => { timer = new Timer( noop, delay ) });
+        afterAll(() => { timer = null });
+        describe( '"sleep mode" handler property', () => {
+            test( 'is accessible', () => expect( timer.continuityWatch ).toEqual( expect.any( Function ) ) );
+            test( 'is readonly', () => expect(() => { timer.continuityWatch = 23 }).toThrow() );
+        } );
+        describe( 'current wait time', () => {
+            test( 'provides information on the total delay wait time remaining', () => {
+                const elapsed = 240;
+                expect( timer.currentWaitTime ).toBe( delay );
+                jest.advanceTimersByTime( elapsed );
+                expect( timer.currentWaitTime ).toBe( delay - elapsed );
+            } );
+            test( 'is readonly', () => expect(() => { timer.currentWaitTime = 2560 }).toThrow() );
         } );
     } );
 } );
