@@ -12,15 +12,23 @@ const EVENT_MEHTOD_NAMES : Array<EventMethodName> = [ 'addEventListener', 'dispa
 
 export const setupMocks = () => {
     const listeners : {[type:string]: Set<EventListenerOrEventListenerObject>} = {};
+    const tempProps = {};
     const mock : IEventMock = {};
     for( let name of EVENT_MEHTOD_NAMES ) {
-        mock[ name ] = name in global.document
-            ? jest.spyOn( global.document, name )
-            : jest.fn();
+        if( name in global.document ) {
+            mock[ name ] = jest.spyOn( global.document, name );
+            continue;
+        }
+        mock[ name ] = jest.fn();
+        tempProps[ name ] = mock[ name ];
+        global.document[ name ] = mock[ name ];
     }
     mock.mockClear = function() { EVENT_MEHTOD_NAMES.forEach( n => this[ n ].mockClear() ) }
     mock.mockReset = function() { EVENT_MEHTOD_NAMES.forEach( n => this[ n ].mockReset() ) }
-    mock.mockRestore = function() { EVENT_MEHTOD_NAMES.forEach( n => this[ n ].mockRestore() ) }
+    mock.mockRestore = function() { EVENT_MEHTOD_NAMES.forEach( n => {
+        this[ n ].mockRestore();
+        if( n in tempProps ) { delete this[ n ] }
+    } ) }
     mock.addEventListener.mockImplementation(( type, listener ) => {
         if( type in listeners ) { listeners[ type ].add( listener ) }
         listeners[ type ] = new Set([ listener ])

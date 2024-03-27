@@ -1,21 +1,22 @@
 import type { Delay, MyInteger, Options, VoidFn } from '../types';
 
-import { EMPTY_OBJECT, MAX_SET_TIMEOUT_DELAY } from '../constants';
+import { EMPTY_ARRAY, EMPTY_OBJECT, MAX_SET_TIMEOUT_DELAY } from '../constants';
 
 import { $global } from '../$global';
 
 import { getTypeOf, noop } from '../util/index';
 
-import { add, subtract } from '../util/int-xl/index';
+import { add, isGreaterThan, subtract } from '../util/int-xl/index';
 
 import { sanitizeDelay } from './helpers/index';
 
 import TimerObservable from '../observable/index';
+import { fromScalar } from '../util/uint8array/index';
 
 class Timer extends TimerObservable {
     #continuityWatch : VoidFn;
     #currentIterDuration : number;
-    #currentIterLengthSuspended = 0; // current iteration duration remaining at suspension
+    #suspendedAt : number = undefined; // in ms set if current iteration has gone into sleep mode
     #cycleStart : number; // the time of the current count iteration start
     #handler : VoidFn;
     #disposed = false;
@@ -28,21 +29,24 @@ class Timer extends TimerObservable {
         fn: VoidFn,
         delay: Delay = 0,
         options : Options = EMPTY_OBJECT,
-        ...args: Array<any>
+        ...args : Array<any>
     ) {
         super();
         this.#handler = fn;
         this.#maxIterDuration =  options.maxTimeoutDelay ?? MAX_SET_TIMEOUT_DELAY;
-        this.#payload = args;
+        // istanbul ignore next
+        this.#payload = args || EMPTY_ARRAY;
         this.#totalUntouchedDelay = sanitizeDelay( delay );
         this.persist();
         this.beginIteration();
         options.immediate && this.execute();
     } 
+    // istanbul ignore next
     get continuityWatch () { return this.#continuityWatch }
     // time spent in current iteration
     get currentIterElaspedTime () { return Date.now() - this.#cycleStart }
     get currentWaitTime () {
+        // istanbul ignore next
         return typeof this.#cycleStart === 'undefined'
             ? this.#totalUntouchedDelay
             : add(
@@ -51,6 +55,7 @@ class Timer extends TimerObservable {
             );
     }
     get disposed () { return this.#disposed }
+    @invoke
     beginIteration() {
         switch( getTypeOf( this.#totalUntouchedDelay ) ) {
             case 'Number': {
@@ -72,6 +77,7 @@ class Timer extends TimerObservable {
                 this.#currentIterDuration = this.#maxIterDuration;
                 break;
             }
+            // istanbul ignore next
             default: return this.exit();
         }
         this.setTimeout();
@@ -85,27 +91,36 @@ class Timer extends TimerObservable {
         this.clearTimeout();
         if( !this.#totalUntouchedDelay ) {
             this.execute();
-            this.notifCycleEnd( true );
+            this.notifyCycleEnd( true );
             return this.exit();
         }
-        this.notifCycleEnd();
+        this.notifyCycleEnd();
         this.beginIteration();
     }
+    @invoke
     execute() { this.#handler( ...this.#payload ) }
     exit() {
         this.clearTimeout();
         this.#continuityWatch && $global.document.removeEventListener( 'visibilitychange', this.#continuityWatch );
-        this.dispatchEvent( 'exit', { timeRemaining: this.currentWaitTime } );
-        this.#handler = this.#payload = this.#totalUntouchedDelay = this.#continuityWatch = undefined;
+        this.dispatchEvent( 'exit', { timeRemaining: this.currentWaitTime ?? 0 } );
+        this.#continuityWatch = this.#handler = this.#payload = this.#totalUntouchedDelay = undefined;
         this.#disposed = true;
     }
-    notifCycleEnd( isFinal = false ) {
+    @invoke
+    notifyCycleEnd( isFinal = false ) {
         this.dispatchEvent( 'cycleEnding', {
             currentCycle: this.#numCycles,
             isFinal,
             time: Date.now()
         } );
     }
+    @invoke
+    notifyResume() {
+        // istanbul ignore next
+        const timeRemaining = this.currentWaitTime || 0;
+        this.dispatchEvent( 'resume', { timeRemaining } );
+    }
+    @invoke
     onContinuityChange() {
         switch( $global.document.visibilityState ) {
             case 'hidden': return this.suspend();
@@ -119,16 +134,36 @@ class Timer extends TimerObservable {
         this.#continuityWatch = () => this.onContinuityChange();
         $global.document.addEventListener( 'visibilitychange', this.#continuityWatch );
     }
+    @invoke
     resume() {
-        if( this.#currentIterLengthSuspended < 0 ) { return this.beginIteration() }
-        const rollover = this.#currentIterLengthSuspended - Date.now();
-        this.#currentIterLengthSuspended = 0;
-        if( rollover < 0 ) { return this.beginIteration() }
-        this.#currentIterDuration = rollover;
-        rollover > 0 ? this.endIteration() : this.setTimeout();
-        return this.dispatchEvent( 'resume', { timeRemaining: this.currentWaitTime } );
+        const sleepDuration =  Date.now() - this.#suspendedAt;
+        const preSleepIterRemaining = this.#currentIterDuration - ( this.#suspendedAt - this.#cycleStart );
+        const postIterSleepLength =  sleepDuration - preSleepIterRemaining;
+        /* did not completely sleep through the iteration */
+        if( postIterSleepLength <= 0  ) {
+            this.#currentIterDuration = postIterSleepLength;
+            this.notifyResume();
+            return this.setTimeout();
+        }
+        /* slept through the entire timer delay */
+        if( !this.#totalUntouchedDelay || isGreaterThan(
+            postIterSleepLength, this.#totalUntouchedDelay
+        ) ) {
+            this.notifyResume();
+            this.execute();
+            return this.exit();
+        }
+        /* slept through at least the current
+        iteration but not the entire timer delay */
+        this.#totalUntouchedDelay = subtract(
+            this.#totalUntouchedDelay,
+            Date.now() - this.#cycleStart
+        );
+        this.notifyResume();
+        this.beginIteration();
     }
     setTimeout() {
+        // istanbul ignore next
         this.#timeoutId && console.info( 'overriding current active timer' );
         this.#timeoutId = $global.setTimeout(
             () => this.endIteration(),
@@ -142,12 +177,21 @@ class Timer extends TimerObservable {
             time: this.#cycleStart
         } );
     }
+    @invoke
     suspend() {
+        // istanbul ignore next
         if( typeof this.#cycleStart === 'undefined' ) { return }
-        this.#currentIterLengthSuspended = this.#currentIterDuration - this.currentIterElaspedTime;
+        this.#suspendedAt = Date.now();
         this.clearTimeout();
-        this.dispatchEvent( 'suspend', { timeRemaining: this.currentWaitTime } );
+        this.dispatchEvent( 'suspend', { timeRemaining: this.currentWaitTime ?? 0 } );
     }
 }
 
 export default Timer;
+
+function invoke<C>( method: Function, context: C ) {
+    return function ( this: Timer, ...args: Array<any> ) {
+        if( this.disposed ) { return };
+        return method.apply( this, args );
+    };
+}
