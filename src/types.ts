@@ -1,3 +1,9 @@
+export type { default as TimerObservable } from './observable/index';
+
+export type { default as Timer } from './timer/index';
+
+export type { LongCounter, Interval } from './index';
+
 export type Delay = BigInteger|Iterable<number>|IterableIterator<number>|number|string|undefined;
 
 export type DelayTypeName = 'BigInt'|'Invalid'|'Iterable'|'Number'|'String'|'Undefined'|'Uint8Array'

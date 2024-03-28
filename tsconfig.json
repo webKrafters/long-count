@@ -22,7 +22,9 @@
     // Change the following to match your project
     "exclude": [
         "src/**/test",
-        "src/**/*.test.js"
+        "src/**/*.test.ts",
+        "test-artifacts",
+        "test-artifacts/**/*.ts"
     ],
     "include": [ "src/**/*" ]
   }

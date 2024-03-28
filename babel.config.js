@@ -8,7 +8,8 @@ module.exports = function ( api ) {
 	} else {
 		config.ignore = [
 			'**/test',
-			'**/*.test.js'
+			'**/*.test',
+			'test-artifacts',
 		];
 	};
 	return config;
