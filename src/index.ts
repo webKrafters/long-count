@@ -10,22 +10,42 @@ export type Opts = Partial<Options>;
 
 let counter = 0;
 
-const longCounterMap : {
-    [counterId:number]: LongCounter
-} = {};
+const longCounterMap : { [counterId:number]: LongCounter } = {};
 
-let internalCode = Math.random();
-const isInternal = (() => {
-    let prevCode;
-    $global.setInterval(() => {
-        prevCode = internalCode;
-        internalCode = Math.random();
-        $global.setTimeout( () => {
-            prevCode = undefined;
-        }, 1e4 );
-    }, 1.08e7 ) // 3 hour cycle
-    return ( envcode : number ) => envcode && ( envcode === internalCode || envcode === prevCode );
-})();
+export const internal = {
+    current: Math.random(),
+    graceId: undefined,
+    is( envcode : number ) {
+
+        // @debug
+        console.log( 'XXXXXXXXXXXXXXX', {
+            envcode,
+            current: this.current,
+            previous: this.previous
+
+        })
+        return envcode && ( envcode === this.current || envcode === this.previous );
+    },
+    previous: undefined,
+    ttl: 1.08e7, // 3 hour cycle
+    unwatch() {
+        global.clearTimeout( this.graceId );
+        global.clearInterval( this.watchId );
+        this.graceId = this.watchId = undefined;
+    },
+    watch() {
+        const _this = this;
+        this.watchId = $global.setInterval(() => {
+            _this.previous = _this.current;
+            _this.current = Math.random();
+            _this.graceId = $global.setTimeout( () => {
+                _this.previous = undefined;
+            }, 1e4 );
+        }, this.ttl );
+    },
+    watchId: undefined
+};
+internal.watch();
 
 export class LongCounter extends TimerObservable {
     #id : number;
@@ -36,6 +56,7 @@ export class LongCounter extends TimerObservable {
         this.#id = ++counter;
         longCounterMap[ this.#id ] = this;
     }
+    get expired() { return this.#timer === undefined };
     get id() { return this.#id }
     get timeRemaining() { return this.#timer?.currentWaitTime }
     protected get timer() { return this.#timer }
@@ -69,7 +90,9 @@ export class LongCounter extends TimerObservable {
 export class Interval extends LongCounter {
     constructor( timer : Timer ) { super( timer ) }
     updateTimer ( timer : Timer, internalCode : number ) {
-        if( !isInternal( internalCode ) ) { return }
+        if( !internal.is( internalCode ) ) {
+            throw new SyntaxError( `Following operation cannot be completed using the following code: ${ internalCode }.` );
+        }
         for( let [ eventType, listeners ] of Object.entries( this.observers ) ) {
             for( let listener of listeners ) {
                 timer.addEventListener( eventType as EventType, listener );
@@ -81,36 +104,45 @@ export class Interval extends LongCounter {
     }
 }
 
-/** @param longCounter - LongCounter instance or its `id` property value */
-const endLongCount = <T extends number|LongCounter>( longCounter : T ) => ( (
+/** @param longCounter - LongCounter instance or LongCounter.id property value */
+const endLongCount = <T extends number | LongCounter>( longCounter : T ) => ( (
     typeof longCounter === 'number'
         ? longCounterMap[ longCounter ]
         : longCounter
 ) as LongCounter )?.cancel();
 
+/** @param longCounter - LongCounter instance or LongCounter.id property value */
 export const clearInterval = endLongCount;
+
+/** @param longCounter - LongCounter instance or LongCounter.id property value */
 export const clearTimeout = endLongCount;
 
-/** @param options - The Timer options object or its `immediate` property value  */
-const resolveTimerOptions = <T extends boolean|Opts>( options : T ) : Opts => (
+/** @param options - Options object or Options.immediate property value  */
+const resolveTimerOptions = <T extends boolean | Opts>( options : T ) : Opts => (
     typeof options === 'boolean' ? { immediate: options } : options
 );
 
-export function setInterval( fn : VoidFn, delay? : Delay, option? : boolean, ...args : Array<any> ) : LongCounter;
-export function setInterval( fn : VoidFn, delay? : Delay, option? : Opts, ...args : Array<any> ) : LongCounter;
-export function setInterval( fn : VoidFn, delay : Delay = undefined, options : boolean|Opts = false , ...args : Array<any> ) {
+/** @param options - Options.immediate property value  */
+export function setInterval( fn : VoidFn, delay? : Delay, options? : boolean, ...args : Array<any> ) : Interval;
+/** @param options - Options object */
+export function setInterval( fn : VoidFn, delay? : Delay, options? : Opts, ...args : Array<any> ) : Interval;
+/** @param options - Options object or Options.immediate property value  */
+export function setInterval( fn : VoidFn, delay : Delay = undefined, options : boolean | Opts = false , ...args : Array<any> ) {
     const tOptions = resolveTimerOptions( options );
     const interval = new Interval( new Timer( fn, delay, tOptions, ...args ) );
     interval.addEventListener( 'exit', () => interval.updateTimer(
         new Timer( fn, delay, { ...tOptions, immediate : false }, ...args ),
-        internalCode
+        internal.current
     ) );
     return interval;
 };
 
+/** @param options - Options.immediate property value  */
 export function setTimeout( fn : VoidFn, delay? : Delay, options? : boolean, ...args : Array<any> ) : LongCounter;
+/** @param options - Options object */
 export function setTimeout( fn : VoidFn, delay? : Delay, options? : Opts, ...args : Array<any> ) : LongCounter;
-export function setTimeout( fn : VoidFn, delay : Delay = undefined, options : any = false, ...args : Array<any> ) {
+/** @param options - Options object or Options.immediate property value  */
+export function setTimeout( fn : VoidFn, delay : Delay = undefined, options : boolean | Opts = false, ...args : Array<any> ) {
     const counter = new LongCounter( new Timer( fn, delay, resolveTimerOptions( options ), ...args ) );
     counter.addEventListener( 'exit', counter.cancel.bind( counter ) );
     return counter;
