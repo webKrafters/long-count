@@ -10,22 +10,13 @@ export type Opts = Partial<Options>;
 
 let counter = 0;
 
-const longCounterMap : { [counterId:number]: LongCounter } = {};
+const longCounterMap : {[ counterId : number ]: LongCounter } = {};
 
 export const internal = {
     current: Math.random(),
     graceId: undefined,
-    is( envcode : number ) {
-
-        // @debug
-        console.log( 'XXXXXXXXXXXXXXX', {
-            envcode,
-            current: this.current,
-            previous: this.previous
-
-        })
-        return envcode && ( envcode === this.current || envcode === this.previous );
-    },
+    gracePeriod: 1e4, // 10 seconds
+    is( envcode : number ) { return envcode && ( envcode === this.current || envcode === this.previous ) },
     previous: undefined,
     ttl: 1.08e7, // 3 hour cycle
     unwatch() {
@@ -34,13 +25,14 @@ export const internal = {
         this.graceId = this.watchId = undefined;
     },
     watch() {
+        if( this.watchId ) { throw new TypeError( 'Cannot begin new watch at this time. An exisitng watch is currently underway. Use the `unwatch()` method to disable it in order to begin a new watch.' ) }
         const _this = this;
         this.watchId = $global.setInterval(() => {
             _this.previous = _this.current;
             _this.current = Math.random();
             _this.graceId = $global.setTimeout( () => {
-                _this.previous = undefined;
-            }, 1e4 );
+                _this.graceId = _this.previous = undefined;
+            }, this.gracePeriod );
         }, this.ttl );
     },
     watchId: undefined
@@ -59,7 +51,6 @@ export class LongCounter extends TimerObservable {
     get expired() { return this.#timer === undefined };
     get id() { return this.#id }
     get timeRemaining() { return this.#timer?.currentWaitTime }
-    protected get timer() { return this.#timer }
     protected set timer( timer ) { this.#timer = timer }
     addEventListener( eventType : EventType, listener : VoidFn ) {
         this.#timer &&
@@ -68,7 +59,11 @@ export class LongCounter extends TimerObservable {
     }
     cancel() {
         delete longCounterMap[ this.id ];
-        if( !this.#timer || this.#timer.disposed) { return }
+        if( !this.#timer ) { return }
+        if( this.#timer.disposed ) {
+            this.#timer = undefined;
+            return;
+        }
         // preempts exit listeners
         for( let listener of this.observers.exit ) {
             this.#timer.removeEventListener( 'exit', listener );

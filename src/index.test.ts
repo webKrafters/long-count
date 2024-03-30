@@ -1,3 +1,6 @@
+import type { Delay, VoidFn } from './types';
+import type { Opts } from './index';
+
 import { MAX_SET_TIMEOUT_DELAY } from './constants';
 import * as main from './index';
 
@@ -30,13 +33,76 @@ describe( 'package main', () => {
     });
     afterAll(() => jest.restoreAllMocks());
     describe( 'LongCounter', () => {
+        let instance : main.LongCounter;
+        beforeAll(() => { instance = new main.LongCounter( new Timer( noop ) ) });
+        afterAll(() => { instance.cancel() });
         describe( 'polymorphic type', () => {
-            let instance : main.LongCounter | undefined;
-            beforeAll(() => { instance = new main.LongCounter( new Timer( noop ) ) });
-            afterAll(() => { instance = undefined })
             test( 'is a LongCounter', () => { expect( instance ).toBeInstanceOf( main.LongCounter ) } );
             test( 'is a TimerObservable', () => { expect( instance ).toBeInstanceOf( TimerObservable ) } );
             test( 'is NOT an Interval', () => { expect( instance ).not.toBeInstanceOf( main.Interval ) } );
+        } );
+        test( 'the value method produces the id property', () => {
+            expect( instance.valueOf() ).toBe( instance.id );
+        } );
+        describe( 'observability', () => {
+            let added, dispatched, removed;
+            beforeAll(() => {
+                const listener = jest.fn();
+                instance.addEventListener( 'exit', listener );
+                if( listener.mock.calls.length ) { return }
+                const argNums = [ 1, 2, 3, 4 ]
+                instance.dispatchEvent( 'exit', ...argNums );
+                if( listener.mock.calls[ 0 ].some(( v, i ) => v !== argNums[ i ] )) {
+                    return
+                }
+                added = dispatched = true;
+                listener.mockClear();
+                const argChars = [ 'A', 'B', 'C', 'D' ];
+                instance.dispatchEvent( 'exit', ...argChars );
+                if( listener.mock.calls[ 0 ].some(( v, i ) => v !== argChars[ i ] )) {
+                    dispatched = false;
+                    return;
+                }
+                listener.mockClear();
+                instance.removeEventListener( 'exit', listener );
+                const argStrs = [ 'Uno', 'Dos', 'Tres', 'Quatro' ];
+                instance.dispatchEvent( 'exit', argStrs );
+                removed = !listener.mock.calls.length;
+            });
+            test( 'can add listeners', () => expect( added ).toBe( true ) );
+            test( 'can dispatch events to listeners', () => expect( dispatched ).toBe( true ) );
+            test( 'can remmove listeners', () => expect( removed ).toBe( true ) );
+        } );
+        test( 'ignores attempts to re-cancel if expired', () => {
+            const timerExitSpy = jest.spyOn( Timer.prototype, 'exit' );
+            const counter = new main.LongCounter( new Timer( noop ) );
+            expect( timerExitSpy ).not.toHaveBeenCalled();
+            expect( counter.expired ).toBe( false );
+            counter.cancel();
+            expect( timerExitSpy ).toHaveBeenCalledTimes( 1 );
+            expect( counter.expired ).toBe( true );
+            timerExitSpy.mockClear();
+            counter.cancel();
+            expect( timerExitSpy ).not.toHaveBeenCalled();
+            expect( counter.expired ).toBe( true );
+            timerExitSpy.mockRestore();
+        } );
+        describe( 'when bearing a disposed timer mechanism', () => {
+            test( 'updates `expired` state but ignores attempts to re-cancel timer', () => {
+                const timerExitSpy = jest.spyOn( Timer.prototype, 'exit' );
+                const timer = new Timer( noop );
+                const counter = new main.LongCounter( timer );
+                expect( timerExitSpy ).not.toHaveBeenCalled();
+                expect( counter.expired ).toBe( false );
+                timer.exit();
+                expect( timerExitSpy ).toHaveBeenCalledTimes( 1 );
+                expect( counter.expired ).toBe( false );
+                timerExitSpy.mockClear();
+                counter.cancel();
+                expect( timerExitSpy ).not.toHaveBeenCalled();
+                expect( counter.expired ).toBe( true );
+                timerExitSpy.mockRestore();
+            } );
         } );
     } );
     describe( 'Interval', () => {
@@ -83,7 +149,7 @@ describe( 'package main', () => {
                 expect( LongCounterSpies.cancel ).toHaveBeenCalledTimes( 1 );
                 expect( t.expired ).toBe( true );
             } );
-            test( 'disarming the handler', () => {
+            test( 'thereby disarming the handler', () => {
                 const delay = 1e5;
                 const handlerMock = jest.fn();
                 clearTimer( setTimer( handlerMock, delay ) );
@@ -209,11 +275,20 @@ describe( 'package main', () => {
 } );
 
 describe( 'internal caller passcode', () => {
+    test( 'watch automatically starts at module load', () => {
+        jest.isolateModules(() => {
+            jest.useFakeTimers();
+            const { internal } = require( './index' );
+            expect( internal.watchId ).toBeDefined();
+            internal.unwatch(); // turn off the watch
+            expect( internal.watchId ).toBeUndefined();
+            jest.useRealTimers();
+        });
+    } );
     test( 'updates every `$ttl` milliseconds', () => {
         jest.isolateModules(() => {
             jest.useFakeTimers();
             const { internal } = require( './index' );
-            internal.watch();
             const currentPassCode = internal.current;
             jest.advanceTimersByTime( internal.ttl - 10 );
             expect( internal.current ).toBe( currentPassCode );
@@ -227,43 +302,33 @@ describe( 'internal caller passcode', () => {
     test( 'grants old passcode a 10-second grace period', () => {
         jest.isolateModules(() => {
             jest.useFakeTimers();
-            const { internal } = require( './index' );
-            
-            
-
-            // @debug
-            console.log( `${ '0'.repeat( 12 ) } >>>>>`, { currentPassCode: undefined, ...internal });
-
-
-            internal.watch();
-
+            const internal = require( './index' ).internal;  
             const currentPassCode = internal.current;
             jest.advanceTimersByTime( internal.ttl );
             expect( internal.current ).not.toBe( currentPassCode );
-
-            // @debug
-            console.log( `${ '1'.repeat( 12 ) } >>>>>`, { currentPassCode, ...internal });
-
             expect( internal.is( currentPassCode ) ).toBe( true );
             jest.advanceTimersByTime( 9e3 );
-
-            // @debug
-            console.log( `${ '2'.repeat( 12 ) } >>>>>`, { currentPassCode, ...internal });
-
             expect( internal.current ).not.toBe( currentPassCode );
             expect( internal.is( currentPassCode ) ).toBe( true );
             jest.advanceTimersByTime( 1e3 );
-
-            // @debug
-            console.log( `${ '3'.repeat( 12 ) } >>>>>`, { currentPassCode, ...internal });
-
             expect( internal.current ).not.toBe( currentPassCode );
             expect( internal.is( currentPassCode ) ).toBe( false );
             internal.unwatch();
+            jest.useRealTimers();
 
-            // @debug
-            console.log( `${ '4'.repeat( 12 ) } >>>>>`, { currentPassCode, ...internal });
-
+        });
+    } );
+    test( 'throws a `TypeError` on attempt to call the `watch()` method while currently under watch', () => {
+        jest.isolateModules(() => {
+            jest.useFakeTimers();
+            const { internal } = require( './index' );
+            try { internal.watch() } catch( e ) {
+                expect( e.constructor ).toEqual( TypeError );
+                expect( e.message ).toEqual(
+                    'Cannot begin new watch at this time. An exisitng watch is currently underway. Use the `unwatch()` method to disable it in order to begin a new watch.'
+                )
+            }
+            internal.unwatch();
             jest.useRealTimers();
         });
     } );
