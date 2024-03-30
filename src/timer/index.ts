@@ -1,4 +1,4 @@
-import type { Delay, MyInteger, Options, VoidFn } from '../types';
+import type { Delay, EventType, MyInteger, Options, VoidFn } from '../types';
 
 import { EMPTY_ARRAY, EMPTY_OBJECT, MAX_SET_TIMEOUT_DELAY } from '../constants';
 
@@ -104,6 +104,9 @@ class Timer extends TimerObservable {
         this.dispatchEvent( 'exit', { timeRemaining: this.currentWaitTime } );
         this.#continuityWatch = this.#cycleStart = this.#handler = this.#payload = this.#totalUntouchedDelay = undefined;
         this.#currentIterDuration = 0;
+        for( let k in this.observers ) {
+            this.observers[ k as EventType ].clear();
+        }
         this.#disposed = true;
     }
     @invoke

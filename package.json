@@ -46,7 +46,7 @@
     "timer"
   ],
   "license": "MIT",
-  "main": "index.ts",
+  "main": "index.js",
   "name": "@webkrafters/long-count",
   "publishConfig": {
     "access": "public"

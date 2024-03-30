@@ -1,6 +1,3 @@
-import type { Delay, VoidFn } from './types';
-import type { Opts } from './index';
-
 import { MAX_SET_TIMEOUT_DELAY } from './constants';
 import * as main from './index';
 
