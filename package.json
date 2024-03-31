@@ -23,7 +23,7 @@
     "ts-node": "^10.9.2",
     "typescript": "^5.4.2"
   },
-  "files": [ "dist", "index.js" ],
+  "files": [ "dist", "index.js", "logo.svg" ],
   "homepage": "https://github.com/webKrafters/long-count/readme",
   "keywords": [
     "interval",
@@ -63,5 +63,5 @@
     "test:watch": "jest --updateSnapshot --watchAll"
   },
   "types": "dist/types.d.ts",
-  "version": "0.0.1"
+  "version": "0.0.2"
 }
