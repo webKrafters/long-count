@@ -1,6 +1,6 @@
 # Long Count 
-<div style="padding:20px" align="center">
-<img src="logo.svg" style="height:280px"></img>
+<div style="height:280px; min-width:320px; padding:20px; text-align:center">
+    <img src="logo.svg"></img>
 </div>
 
 # Introduction
