@@ -1,7 +1,7 @@
 # Long Count 
-<div style="height:280px; min-width:320px; padding:20px; text-align:center" align="center">
+<p align="center" height="200" min-width="320" padding="20">
     <img src="logo.svg"></img>
-</div>
+</p>
 
 # Introduction
 **Long Count** is a library of **`setInterval`** and **`setTimeout`** functions producing a **`LongCounter`** instance capable of handling superbly long delay times and surviving device sleep and wake cycles.
