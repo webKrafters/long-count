@@ -1,8 +1,8 @@
-export type { default as TimerObservable } from './observable/index';
+export { default as TimerObservable } from './observable/index';
 
-export type { default as Timer } from './timer/index';
+export { default as Timer } from './timer/index';
 
-export type { LongCounter, Interval, setInterval, setTimeout, clearInterval, clearTimeout } from './index';
+export { LongCounter, Interval, setInterval, setTimeout, clearInterval, clearTimeout } from './index';
 
 export type Delay = BigInteger | Iterable<number> | IterableIterator<number> | number | string | undefined;
 
