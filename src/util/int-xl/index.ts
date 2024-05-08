@@ -1,4 +1,4 @@
-import type { DelayTypeName, MyInteger } from '../../types';
+import type { DelayTypeName, MyInteger } from '../../index';
 
 interface TypedData {
     type: DelayTypeName,

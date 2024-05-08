@@ -1,7 +1,7 @@
 // @ts-nocheck
 
 import Timer from './timer';
-import { internal, setInterval, setTimeout } from '.';
+import { internal, setInterval, setTimeout } from './main';
 
 jest.mock( './timer' );
 

@@ -23,7 +23,10 @@
     "ts-node": "^10.9.2",
     "typescript": "^5.4.2"
   },
-  "files": [ "dist", "index.js", "logo.svg" ],
+  "files": [
+    "dist",
+    "logo.svg"
+  ],
   "homepage": "https://github.com/webKrafters/long-count/readme",
   "keywords": [
     "interval",
@@ -46,7 +49,7 @@
     "timer"
   ],
   "license": "MIT",
-  "main": "index.js",
+  "main": "dist/index.js",
   "name": "@webkrafters/long-count",
   "publishConfig": {
     "access": "public"
@@ -63,5 +66,5 @@
     "test:watch": "jest --updateSnapshot --watchAll"
   },
   "types": "dist/types.d.ts",
-  "version": "0.0.4"
+  "version": "1.0.0-rc.0"
 }

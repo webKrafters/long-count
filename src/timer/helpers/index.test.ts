@@ -1,4 +1,4 @@
-import type { Delay } from '../../types';
+import type { Delay } from '../../index';
 
 import { getTypeOfValidDelay, sanitizeDelay } from './index';
 

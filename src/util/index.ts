@@ -1,4 +1,4 @@
-import type { VoidFn } from "../types";
+import type { VoidFn } from '../index';
 
 const FROM_STRING_PATTERN = /\s(\w+)\]$/;
 

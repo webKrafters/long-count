@@ -1,4 +1,4 @@
-import type { Delay, DelayTypeName, MyInteger } from '../../types';
+import type { Delay, DelayTypeName, MyInteger } from '../../index';
 
 import { getTypeOf } from '../../util/index';
 

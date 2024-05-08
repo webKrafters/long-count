@@ -1,5 +1,4 @@
-import { isUint8Array } from 'util/types';
-import type { MyInteger } from '../../types';
+import type { MyInteger } from '../../index';
 
 const BASE = 10;
 
