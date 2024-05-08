@@ -1,4 +1,4 @@
-import type { Delay, EventType, MyInteger, Options, VoidFn } from '../types';
+import type { Delay, EventType, MyInteger, Options, VoidFn } from '../index';
 
 import { EMPTY_ARRAY, EMPTY_OBJECT, MAX_SET_TIMEOUT_DELAY } from '../constants';
 

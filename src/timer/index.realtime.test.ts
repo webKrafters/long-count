@@ -1,6 +1,6 @@
 type IntRange = { max : number, min : number }
 
-import type { Options } from '../types';
+import type { Options } from '../index';
 
 import type { IEventMock } from '../../test-artifacts/global-events';
 
@@ -41,7 +41,12 @@ const getTimeoutSpy = () => {
 
 describe( 'Timer - RT testing', () => {
     describe( 'behavior at beyond the platform max setTimeout delay', () => {
-        const runTest = ( label : string, delay : any, expectedNumRefreshes : number /* must be sufficient to bring time remaining at early termination within the MAX_SAFE_INTEGER range */, timeRemainingRange? : IntRange ) => {
+        const runTest = (
+            label : string,
+            delay : any,
+            expectedNumRefreshes : number, // must be sufficient to bring time remaining at early termination within the MAX_SAFE_INTEGER range
+            timeRemainingRange? : IntRange
+        ) => {
             test( label, () => new Promise(( resolve, reject ) => {
                 const handlerMock = jest.fn();
                 const timeoutSpy = getTimeoutSpy();
@@ -66,8 +71,8 @@ describe( 'Timer - RT testing', () => {
                         expect( handlerMock ).not.toHaveBeenCalled();
                         expect( timeoutSpy ).toHaveBeenCalledTimes( expectedNumRefreshes );
                         const actualTimeRemaining = timer.currentWaitTime as number;
-                        expect( actualTimeRemaining ).toBeGreaterThanOrEqual( timeRemainingRange.min );
-                        expect( actualTimeRemaining ).toBeLessThan( timeRemainingRange.max );
+                        expect( actualTimeRemaining ).toBeGreaterThanOrEqual( timeRemainingRange?.min as number );
+                        expect( actualTimeRemaining ).toBeLessThan( timeRemainingRange?.max as number );
                         resolve( true );
                     } catch( e ) {
                         reject( interceptGroupTestError( e ) )

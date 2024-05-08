@@ -1,4 +1,4 @@
-import type { EventType, ITimerObservable, ObserverMap, VoidFn } from '../types';
+import type { EventType, ITimerObservable, ObserverMap, VoidFn } from '../index';
 
 import { getDefaultObserverMap } from './helpers/index';
 

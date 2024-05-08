@@ -1,5 +1,5 @@
 import { MAX_SET_TIMEOUT_DELAY } from './constants';
-import * as main from './index';
+import * as main from './main';
 
 import TimerObservable from './observable';
 import Timer from './timer';
@@ -275,7 +275,7 @@ describe( 'internal caller passcode', () => {
     test( 'watch automatically starts at module load', () => {
         jest.isolateModules(() => {
             jest.useFakeTimers();
-            const { internal } = require( './index' );
+            const { internal } = require( './main' );
             expect( internal.watchId ).toBeDefined();
             internal.unwatch(); // turn off the watch
             expect( internal.watchId ).toBeUndefined();
@@ -285,7 +285,7 @@ describe( 'internal caller passcode', () => {
     test( 'updates every `$ttl` milliseconds', () => {
         jest.isolateModules(() => {
             jest.useFakeTimers();
-            const { internal } = require( './index' );
+            const { internal } = require( './main' );
             const currentPassCode = internal.current;
             jest.advanceTimersByTime( internal.ttl - 10 );
             expect( internal.current ).toBe( currentPassCode );
@@ -299,7 +299,7 @@ describe( 'internal caller passcode', () => {
     test( 'grants old passcode a 10-second grace period', () => {
         jest.isolateModules(() => {
             jest.useFakeTimers();
-            const internal = require( './index' ).internal;  
+            const internal = require( './main' ).internal;  
             const currentPassCode = internal.current;
             jest.advanceTimersByTime( internal.ttl );
             expect( internal.current ).not.toBe( currentPassCode );
@@ -318,7 +318,7 @@ describe( 'internal caller passcode', () => {
     test( 'throws a `TypeError` on attempt to call the `watch()` method while currently under watch', () => {
         jest.isolateModules(() => {
             jest.useFakeTimers();
-            const { internal } = require( './index' );
+            const { internal } = require( './main' );
             try { internal.watch() } catch( e ) {
                 expect( e.constructor ).toEqual( TypeError );
                 expect( e.message ).toEqual(

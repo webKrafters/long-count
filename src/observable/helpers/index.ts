@@ -1,4 +1,4 @@
-import type { ObserverMap } from '../../types';
+import type { ObserverMap } from '../../index';
 
 export const getDefaultObserverMap = () : ObserverMap => ({
     cycleEnding: new Set(),
