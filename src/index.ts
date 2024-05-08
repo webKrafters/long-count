@@ -25,7 +25,7 @@ export interface Options {
     maxTimeoutDelay? : number // allows for declaring max timeout delay value allowed by the target platform
 };
 
-export type VoidFn = ( ...args: Array<any> ) => void;
+export type VoidFn<ARGS extends Array<unknown> = Array<unknown>> = ( ...args: ARGS ) => void;
 
 export {
     clearInterval,
