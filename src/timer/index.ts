@@ -14,29 +14,29 @@ import invoke from './helpers/decorators/invoke';
 
 import TimerObservable from '../observable/index';
 
-class Timer extends TimerObservable {
+class Timer<ARGS extends Array<unknown> = Array<unknown>> extends TimerObservable {
     #continuityWatch : VoidFn;
     #currentIterDuration : number;
     #suspendedAt : number = undefined; // in ms set if current iteration has gone into sleep mode
     #cycleStart : number; // the time of the current count iteration start
-    #handler : VoidFn;
+    #handler : VoidFn<ARGS>;
     #disposed = false;
     #numCycles = 0; // global settimeout invocations currently made in the life of this timer.
     #maxIterDuration : number;
-    #payload : Array<any>;
+    #payload : ARGS;
     #timeoutId : NodeJS.Timeout|string|number|undefined;
     #totalUntouchedDelay : MyInteger|undefined;
     constructor(
-        fn: VoidFn,
+        fn: VoidFn<ARGS>,
         delay: Delay = 0,
         options : Options = EMPTY_OBJECT,
-        ...args : Array<any>
+        ...args : ARGS
     ) {
         super();
         this.#handler = fn;
         this.#maxIterDuration =  options.maxTimeoutDelay ?? MAX_SET_TIMEOUT_DELAY;
         // istanbul ignore next
-        this.#payload = args || EMPTY_ARRAY;
+        this.#payload = args || EMPTY_ARRAY as ARGS;
         this.#totalUntouchedDelay = sanitizeDelay( delay );
         this.persist();
         this.beginIteration();

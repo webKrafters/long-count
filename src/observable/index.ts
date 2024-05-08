@@ -12,7 +12,7 @@ class TimerObservable implements ITimerObservable {
     addEventListener( eventType : EventType, listener : VoidFn ) {
         this.observers[ eventType ]?.add( listener );
     }
-    dispatchEvent( eventType : EventType, ...args : Array<any> ) {
+    dispatchEvent( eventType : EventType, ...args : Array<unknown> ) {
         for( let listen of this.observers[ eventType ] ?? [] ) {
             listen( ...args )
         }

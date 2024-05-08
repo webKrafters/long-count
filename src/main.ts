@@ -71,7 +71,7 @@ export class LongCounter extends TimerObservable {
         this.#timer.exit();
         this.#timer = undefined;
     }
-    dispatchEvent( eventType : EventType, ...args : Array<any> ) {
+    dispatchEvent( eventType : EventType, ...args : Array<unknown> ) {
         this.#timer?.dispatchEvent( eventType, ...args );
     }
     removeEventListener( eventType : EventType, listener : VoidFn ) {
@@ -118,11 +118,13 @@ const resolveTimerOptions = <T extends boolean | Opts>( options : T ) : Opts => 
 );
 
 /** @param options - Options.immediate property value  */
-export function setInterval( fn : VoidFn, delay? : Delay, options? : boolean, ...args : Array<any> ) : Interval;
+export function setInterval<ARGS extends Array<unknown>>( fn : VoidFn<ARGS>, delay? : Delay, options? : boolean, ...args : ARGS ) : Interval;
+/** @param options - Options.immediate property value  */
+export function setInterval<ARGS extends Array<unknown>>( fn : VoidFn<ARGS>, delay? : Delay, options? : boolean, ...args : ARGS ) : Interval;
 /** @param options - Options object */
-export function setInterval( fn : VoidFn, delay? : Delay, options? : Opts, ...args : Array<any> ) : Interval;
+export function setInterval<ARGS extends Array<unknown>>( fn : VoidFn<ARGS>, delay? : Delay, options? : Opts, ...args : ARGS ) : Interval;
 /** @param options - Options object or Options.immediate property value  */
-export function setInterval( fn : VoidFn, delay : Delay = undefined, options : boolean | Opts = false , ...args : Array<any> ) {
+export function setInterval<ARGS extends Array<unknown>>( fn : VoidFn<ARGS>, delay : Delay = undefined, options : boolean | Opts = false , ...args : ARGS ) {
     const tOptions = resolveTimerOptions( options );
     const interval = new Interval( new Timer( fn, delay, tOptions, ...args ) );
     interval.addEventListener( 'exit', () => interval.updateTimer(
@@ -133,11 +135,11 @@ export function setInterval( fn : VoidFn, delay : Delay = undefined, options : b
 };
 
 /** @param options - Options.immediate property value  */
-export function setTimeout( fn : VoidFn, delay? : Delay, options? : boolean, ...args : Array<any> ) : LongCounter;
+export function setTimeout<ARGS extends Array<unknown>>( fn : VoidFn<ARGS>, delay? : Delay, options? : boolean, ...args : ARGS ) : LongCounter;
 /** @param options - Options object */
-export function setTimeout( fn : VoidFn, delay? : Delay, options? : Opts, ...args : Array<any> ) : LongCounter;
+export function setTimeout<ARGS extends Array<unknown>>( fn : VoidFn<ARGS>, delay? : Delay, options? : Opts, ...args : ARGS ) : LongCounter;
 /** @param options - Options object or Options.immediate property value  */
-export function setTimeout( fn : VoidFn, delay : Delay = undefined, options : boolean | Opts = false, ...args : Array<any> ) {
+export function setTimeout<ARGS extends Array<unknown>>( fn : VoidFn<ARGS>, delay : Delay = undefined, options : boolean | Opts = false, ...args : ARGS ) {
     const counter = new LongCounter( new Timer( fn, delay, resolveTimerOptions( options ), ...args ) );
     counter.addEventListener( 'exit', counter.cancel.bind( counter ) );
     return counter;
