@@ -15,7 +15,7 @@ const env = typeof window !== 'undefined'
     ? globalThis : {};
 
 export const $global : Global = env;
-for( let k in [ 'clearInterval', 'clearTimeout', 'setInterval', 'setTimeout' ] ) {
+for( let k of [ 'clearInterval', 'clearTimeout', 'setInterval', 'setTimeout' ] ) {
     if( typeof $global[ k ] === 'undefined' ) { $global[ k ] = noop }
 }
 if( typeof $global.console === 'undefined' ) { $global.console = { warn: noop } }
