@@ -47,7 +47,7 @@ export function sanitizeDelay( delay: any ) {
 function sanitizeIterable( iterable : Uint8Array, isUint8Array? : boolean ) : MyInteger;
 function sanitizeIterable( iterable : Iterable<number>, isUint8Array : boolean = false ) : MyInteger|void {
     const invalidMessage = 'Each element of an iterable `delay` only accepts an integer: 0 - 9.';
-    let count = 0
+    let count = 0;
     for( let item of iterable ) {
         count++;
         if( !( Number.isInteger( item ) && item > -1 && item < 10 ) ) {

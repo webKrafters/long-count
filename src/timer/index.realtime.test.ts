@@ -1,4 +1,7 @@
-type IntRange = { max : number, min : number }
+interface IntRange {
+    max : number,
+    min : number
+};
 
 import type { Options } from '../index';
 
@@ -52,8 +55,7 @@ describe( 'Timer - RT testing', () => {
                 const timeoutSpy = getTimeoutSpy();
                 const timer = new Timer( handlerMock, delay );
                 timer.addEventListener( 'cycleEnding', ({ currentCycle, isFinal } : {
-                    currentCycle : number,
-                    isFinal : boolean
+                    currentCycle : number, isFinal : boolean
                 }) => {
                     if( isFinal ) {
                         try {

@@ -1,4 +1,10 @@
-import type { Delay, EventType, Options, VoidFn } from './index';
+import type {
+    Delay,
+    EventName,
+    EventType,
+    Options,
+    VoidFn 
+} from './index';
 
 import { $global } from './$global';
 
@@ -20,8 +26,8 @@ export const internal = {
     previous: undefined,
     ttl: 1.08e7, // 3 hour cycle
     unwatch() {
-        global.clearTimeout( this.graceId );
-        global.clearInterval( this.watchId );
+        $global.clearTimeout( this.graceId );
+        $global.clearInterval( this.watchId );
         this.graceId = this.watchId = undefined;
     },
     watch() {
@@ -40,44 +46,50 @@ export const internal = {
 internal.watch();
 
 export class LongCounter extends TimerObservable {
-    #id : number;
-    #timer : Timer;
+    private _id : number;
+    private _timer : Timer;
     constructor( timer : Timer ) {
         super();
-        this.#timer = timer;
-        this.#id = ++counter;
-        longCounterMap[ this.#id ] = this;
+        this._timer = timer;
+        this._id = ++counter;
+        longCounterMap[ this._id ] = this;
     }
-    get expired() { return this.#timer === undefined };
-    get id() { return this.#id }
-    get timeRemaining() { return this.#timer?.currentWaitTime }
-    protected set timer( timer ) { this.#timer = timer }
-    addEventListener( eventType : EventType, listener : VoidFn ) {
-        this.#timer &&
-        this.observers[ eventType ].add( listener ) &&
-        this.#timer.addEventListener( eventType, listener );
+    get expired() { return this._timer === undefined };
+    get id() { return this._id }
+    get timeRemaining() { return this._timer?.currentWaitTime }
+    protected set timer( timer ) { this._timer = timer }
+    addEventListener<ARGS extends Array<any>>( eventType : EventName, listener : VoidFn<ARGS> ) : void;
+    addEventListener<ARGS extends Array<any>>( eventType : EventType, listener : VoidFn<ARGS> ) : void;
+    addEventListener( eventType, listener ) : void {
+        this._timer &&
+        this._observers[ eventType ].add( listener ) &&
+        this._timer.addEventListener( eventType, listener );
     }
     cancel() {
         delete longCounterMap[ this.id ];
-        if( !this.#timer ) { return }
-        if( this.#timer.disposed ) {
-            this.#timer = undefined;
+        if( !this._timer ) { return }
+        if( this._timer.disposed ) {
+            this._timer = undefined;
             return;
         }
         // preempts exit listeners
-        for( let listener of this.observers.exit ) {
-            this.#timer.removeEventListener( 'exit', listener );
+        for( let listener of this._observers.exit ) {
+            this._timer.removeEventListener( 'exit', listener );
         }
-        this.#timer.exit();
-        this.#timer = undefined;
+        this._timer.exit();
+        this._timer = undefined;
     }
-    dispatchEvent( eventType : EventType, ...args : Array<unknown> ) {
-        this.#timer?.dispatchEvent( eventType, ...args );
+    dispatchEvent<ARGS extends Array<any>>( eventType : EventType, ...args : ARGS ) : void;
+    dispatchEvent<ARGS extends Array<any>>( eventType : EventName, ...args : ARGS ) : void;
+    dispatchEvent( eventType, ...args ) : void {
+        this._timer?.dispatchEvent( eventType, ...args );
     }
-    removeEventListener( eventType : EventType, listener : VoidFn ) {
-        this.#timer &&
-        this.observers[ eventType ].delete( listener ) &&
-        this.#timer.removeEventListener( eventType, listener );
+    removeEventListener<ARGS extends Array<any>>( eventType : EventType, listener : VoidFn<ARGS> ) : void;
+    removeEventListener<ARGS extends Array<any>>( eventType : EventName, listener : VoidFn<ARGS> ) : void;
+    removeEventListener( eventType, listener ) : void {
+        this._timer &&
+        this._observers[ eventType ].delete( listener ) &&
+        this._timer.removeEventListener( eventType, listener );
     };
     valueOf() { return this.id }
 }
@@ -88,9 +100,9 @@ export class Interval extends LongCounter {
         if( !internal.is( internalCode ) ) {
             throw new SyntaxError( `Following operation cannot be completed using the following code: ${ internalCode }.` );
         }
-        for( let [ eventType, listeners ] of Object.entries( this.observers ) ) {
+        for( let [ eventType, listeners ] of Object.entries( this._observers ) ) {
             for( let listener of listeners ) {
-                timer.addEventListener( eventType as EventType, listener );
+                timer.addEventListener( eventType as EventName, listener );
             }
         }
         this.cancel();
