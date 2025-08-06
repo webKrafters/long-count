@@ -1,4 +1,10 @@
-import type { EventType, ITimerObservable, ObserverMap, VoidFn } from '../index';
+import type {
+    EventName,
+    EventType,
+    ITimerObservable,
+    ObserverMap,
+    VoidFn
+} from '../index';
 
 import { getDefaultObserverMap } from './helpers/index';
 
@@ -7,18 +13,24 @@ export const deps = { // tested dependencies
 };
 
 class TimerObservable implements ITimerObservable {
-    protected observers : ObserverMap;
-    constructor() { this.observers = deps.getObservers() }
-    addEventListener( eventType : EventType, listener : VoidFn ) {
-        this.observers[ eventType ]?.add( listener );
+    protected _observers : ObserverMap;
+    constructor() { this._observers = deps.getObservers() }
+    addEventListener<ARGS extends Array<any>>( eventType : EventType, listener : VoidFn<ARGS> ) : void;
+    addEventListener<ARGS extends Array<any>>( eventType : EventName, listener : VoidFn<ARGS> ) : void;
+    addEventListener( eventType, listener ) : void {
+        this._observers[ eventType ]?.add( listener );
     }
-    dispatchEvent( eventType : EventType, ...args : Array<unknown> ) {
-        for( let listen of this.observers[ eventType ] ?? [] ) {
+    dispatchEvent<ARGS extends Array<any>>( eventType : EventType, ...args : ARGS ) : void;
+    dispatchEvent<ARGS extends Array<any>>( eventType : EventName, ...args : ARGS ) : void;
+    dispatchEvent( eventType, ...args ) : void {
+        for( let listen of this._observers[ eventType ] ?? [] ) {
             listen( ...args )
         }
     }
-    removeEventListener( eventType : EventType, listener : VoidFn ) {
-        this.observers[ eventType ]?.delete( listener );
+    removeEventListener<ARGS extends Array<any>>( eventType : EventType, listener : VoidFn<ARGS> ) : void
+    removeEventListener<ARGS extends Array<any>>( eventType : EventName, listener : VoidFn<ARGS> ) : void
+    removeEventListener( eventType, listener ) : void {
+        this._observers[ eventType ]?.delete( listener );
     }
 }
 
